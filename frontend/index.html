@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Taskity Semantic Search</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background:#f4f6fb;
+      margin:0;
+    }
+
+    .wrap {
+      max-width:900px;
+      margin:auto;
+      padding:20px;
+    }
+
+    input {
+      width:100%;
+      padding:14px;
+      font-size:16px;
+      border-radius:10px;
+      border:1px solid #ddd;
+      box-sizing:border-box;
+    }
+
+    button {
+      margin-top:10px;
+      padding:12px 16px;
+      border-radius:10px;
+      border:0;
+      background:#5b4bdb;
+      color:#fff;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    .card {
+      background:#fff;
+      margin-top:14px;
+      padding:16px;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+
+    .title {
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+
+    .badge {
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+
+    .badge.low { background:#e3f2fd; color:#1565c0; }
+    .badge.medium { background:#fff3e0; color:#ef6c00; }
+    .badge.high { background:#ffe5e5; color:#c62828; }
+    .badge.urgent { background:#fdecea; color:#b71c1c; }
+
+    .desc {
+      font-size:14px;
+      color:#333;
+      margin-top:6px;
+    }
+
+    .meta {
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      font-size:13px;
+      color:#666;
+      margin-top:10px;
+    }
+
+    .empty {
+      margin-top:20px;
+      color:#666;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>🔍 Taskity Semantic Search</h1>
+
+  <input id="q" placeholder="Try: urgent tasks assigned to dhara"/>
+  <button onclick="search()">Search</button>
+
+  <div id="out"></div>
+</div>
+
+<script>
+/* ---------------- HELPERS ---------------- */
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function stripHtml(html){
+  return String(html ?? "").replace(/<[^>]*>/g, "");
+}
+
+function formatDate(epochSeconds){
+  if(!epochSeconds) return "-";
+  return new Date(epochSeconds * 1000).toLocaleString();
+}
+
+/* ---------------- SEARCH ---------------- */
+
+async function search(){
+  const q = document.getElementById("q").value.trim();
+  if(!q) return;
+
+  const res = await fetch("/api/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: q, limit: 10 })
+  });
+
+  const data = await res.json();
+  renderTasks(data.tasks || []);
+}
+
+/* ---------------- RENDER ---------------- */
+
+function renderTasks(tasks){
+  const out = document.getElementById("out");
+  out.innerHTML = "";
+
+  if(tasks.length === 0){
+    out.innerHTML = `<div class="empty">No matching tasks found.</div>`;
+    return;
+  }
+
+  let html = "";
+
+  for (const t of tasks) {
+    const priorityStr = String(t.priority || "medium").toLowerCase();
+    const priorityLabel = priorityStr.toUpperCase();
+
+    html += `
+      <div class="card">
+        <div class="title">${escapeHtml(t.title || "")}</div>
+
+        <div class="badge ${priorityStr}">
+          ${escapeHtml(priorityLabel)}
+        </div>
+
+        <div class="desc">
+          ${escapeHtml(stripHtml(t.description || "No description"))}
+        </div>
+
+        <div class="meta">
+          <span><b>Assigned to:</b> ${escapeHtml(t.assigned_to || "-")}</span>
+          <span><b>Assigned by:</b> ${escapeHtml(t.assigned_by || "-")}</span>
+          <span><b>Due:</b> ${formatDate(t.due_date)}</span>
+          <span><b>Status:</b> ${escapeHtml(t.status || "-")}</span>
+          <span><b>ID:</b> ${escapeHtml(t.id ?? "-")}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  out.innerHTML = html;
+}
+</script>
+</body>
+</html>

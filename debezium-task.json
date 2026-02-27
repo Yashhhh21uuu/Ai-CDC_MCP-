@@ -1,0 +1,30 @@
+{
+  "name": "task-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+    "database.hostname": "192.168.3.52",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "postgres",
+    "database.dbname": "todo_v2",
+
+    "topic.prefix": "dbserver1",
+
+    "schema.include.list": "uuuu",
+    "table.include.list": "uuuu.task",
+
+    "plugin.name": "pgoutput",
+    "slot.name": "task_slot",
+    "publication.autocreate.mode": "filtered",
+
+    "snapshot.mode": "never",
+    "tombstones.on.delete": "false",
+    "heartbeat.interval.ms": "10000",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}
